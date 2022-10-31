@@ -104,7 +104,7 @@
 
         // KEYBOARD:
         if (slider.vars.keyboard && ($(slider.containerSelector).length === 1 || slider.vars.multipleKeyboard)) {
-          $(document).on('keyup', function(event) {
+          $(document).bind('keyup', function(event) {
             var keycode = event.keyCode;
             if (!slider.animating && (keycode === 39 || keycode === 37)) {
               var target = (slider.vars.rtl?
@@ -121,7 +121,7 @@
         }
         // MOUSEWHEEL:
         if (slider.vars.mousewheel) {
-          slider.on('mousewheel', function(event, delta, deltaX, deltaY) {
+          slider.bind('mousewheel', function(event, delta, deltaX, deltaY) {
             event.preventDefault();
             var target = (delta < 0) ? slider.getTarget('next') : slider.getTarget('prev');
             slider.flexAnimate(target, slider.vars.pauseOnAction);
@@ -137,9 +137,9 @@
         // SLIDSESHOW
         if (slider.vars.slideshow) {
           if (slider.vars.pauseOnHover) {
-            slider.on( 'mouseenter', function() {
+            slider.hover(function() {
               if (!slider.manualPlay && !slider.manualPause) { slider.pause(); }
-            } ).on( 'mouseleave', function() {
+            }, function() {
               if (!slider.manualPause && !slider.manualPlay && !slider.stopped) { slider.play(); }
             });
           }
@@ -157,7 +157,7 @@
         if (touch && slider.vars.touch) { methods.touch(); }
 
         // FADE&&SMOOTHHEIGHT || SLIDE:
-        if (!fade || (fade && slider.vars.smoothHeight)) { $(window).on("resize orientationchange focus", methods.resize); }
+        if (!fade || (fade && slider.vars.smoothHeight)) { $(window).bind("resize orientationchange focus", methods.resize); }
 
         slider.find("img").attr("draggable", "false");
 
@@ -237,31 +237,27 @@
             for (var i = 0; i < slider.pagingCount; i++) {
               slide = slider.slides.eq(i);
 
-              if ( undefined === slide.attr( 'data-thumb-alt' ) ) {
-                slide.attr( 'data-thumb-alt', '' );
+              if ( undefined === slide.attr( 'data-thumb-alt' ) ) { 
+                slide.attr( 'data-thumb-alt', '' ); 
               }
-
+              
               item = $( '<a></a>' ).attr( 'href', '#' ).text( j );
-              if (slider.vars.controlNav === "thumbnails") {
-                item = $('<img/>', {
-                  onload: 'this.width = this.naturalWidth; this.height = this.naturalHeight',
-                  src: slide.attr('data-thumb'),
-                  alt: slide.attr('alt')
-                })
+              if ( slider.vars.controlNav === "thumbnails" ) {
+                item = $( '<img/>' ).attr( 'src', slide.attr( 'data-thumb' ) );
               }
-
+              
               if ( '' !== slide.attr( 'data-thumb-alt' ) ) {
                 item.attr( 'alt', slide.attr( 'data-thumb-alt' ) );
               }
 
               if ( 'thumbnails' === slider.vars.controlNav && true === slider.vars.thumbCaptions ) {
                 var captn = slide.attr( 'data-thumbcaption' );
-                if ( '' !== captn && undefined !== captn ) {
+                if ( '' !== captn && undefined !== captn ) { 
                   var caption = $('<span></span>' ).addClass( namespace + 'caption' ).text( captn );
                   item.append( caption );
                 }
               }
-
+              
               var liElement = $( '<li>' );
               item.appendTo( liElement );
               liElement.append( '</li>' );
@@ -278,7 +274,7 @@
 
           methods.controlNav.active();
 
-          slider.controlNavScaffold.on(eventType, 'a, img', function(event) {
+          slider.controlNavScaffold.delegate('a, img', eventType, function(event) {
             event.preventDefault();
 
             if (watchedEvent === "" || watchedEvent === event.type) {
@@ -303,7 +299,7 @@
           slider.controlNav = slider.manualControls;
           methods.controlNav.active();
 
-          slider.controlNav.on(eventType, function(event) {
+          slider.controlNav.bind(eventType, function(event) {
             event.preventDefault();
 
             if (watchedEvent === "" || watchedEvent === event.type) {
@@ -330,23 +326,42 @@
         active: function() {
           slider.controlNav.removeClass(namespace + "active").eq(slider.animatingTo).addClass(namespace + "active");
         },
-        update: function(action, $obj = null, pos = null) {
-          if (slider.pagingCount > 1 && action === "add") {
-
-
-              if(slider.vars.controlNav !== "thumbnails"){
-                slider.controlNavScaffold.append($('<li><a href="#">' + slider.count + '</a></li>'));
+        update: function (action, pos, $obj = null) {
+          
+          if (slider.pagingCount > 0 && action === "add") {
+            if (pos === 0) {
+              if (slider.vars.controlNav === "thumbnails") {
+                slider.controlNavScaffold.append($('<li><img src="' + $obj.attr('data-thumb') + '"></li>'));
               } else {
-                slider.controlNavScaffold.find('li').eq(pos).before($('<li><img src="'+$obj.attr('data-thumb')+'"></li>'));
+                slider.controlNavScaffold.append($('<li><a href="#">' + slider.count + '</a></li>'));
               }
-
-          } else if (slider.pagingCount === 1) {
-            slider.controlNavScaffold.find('li').remove();
-          } else {
+            } else {
+              if (slider.vars.controlNav === "thumbnails") {
+                slider.controlNavScaffold.find('li').eq(pos).before($('<li><img src="' + $obj.attr('data-thumb') + '"></li>'));
+              } else {
+                slider.controlNavScaffold.find('li').eq(pos).before($('<li><a href="#">' + slider.count + '</a></li>'));
+              }
+            }
+          }  else {
+            console.log(pos)
             slider.controlNav.eq(pos).closest('li').remove();
+
+
+            // else if (slider.pagingCount === 0) {
+            //   console.log(pos)
+  
+            //   slider.controlNavScaffold.find('li').remove();
+            // }
+
+
           }
           methods.controlNav.set();
-          (slider.pagingCount > 1 && slider.pagingCount !== slider.controlNav.length) ? slider.update(pos, action) : methods.controlNav.active();
+          if (slider.pagingCount > 0 && slider.pagingCount !== slider.controlNav.length) {
+            // slider.update(pos, action, $obj)
+          } else {
+            methods.controlNav.active();
+          }
+
         }
       },
       directionNav: {
@@ -367,7 +382,7 @@
 
           methods.directionNav.update();
 
-          slider.directionNav.on(eventType, function(event) {
+          slider.directionNav.bind(eventType, function(event) {
             event.preventDefault();
             var target;
 
@@ -393,10 +408,10 @@
             } else if (slider.animatingTo === slider.last) {
               slider.directionNav.removeClass(disabledClass).filter('.' + namespace + "next").addClass(disabledClass).attr('tabindex', '-1');
             } else {
-              slider.directionNav.removeClass(disabledClass).prop( 'tabindex', '-1' );
+              slider.directionNav.removeClass(disabledClass).removeAttr('tabindex');
             }
           } else {
-            slider.directionNav.removeClass(disabledClass).prop( 'tabindex', '-1' );
+            slider.directionNav.removeClass(disabledClass).removeAttr('tabindex');
           }
         }
       },
@@ -415,7 +430,7 @@
 
           methods.pausePlay.update((slider.vars.slideshow) ? namespace + 'pause' : namespace + 'play');
 
-          slider.pausePlay.on(eventType, function(event) {
+          slider.pausePlay.bind(eventType, function(event) {
             event.preventDefault();
 
             if (watchedEvent === "" || watchedEvent === event.type) {
@@ -630,10 +645,10 @@
             slider.viewport.height(slider.h);
             slider.setProps(slider.h, "setTotal");
           } else {
-        slider.setProps(slider.computedW, "setTotal");
-        slider.newSlides.width(slider.computedW);
             // SMOOTH HEIGHT:
             if (slider.vars.smoothHeight) { methods.smoothHeight(); }
+            slider.newSlides.width(slider.computedW);
+            slider.setProps(slider.computedW, "setTotal");
           }
         }
       },
@@ -805,8 +820,8 @@
             }
 
             // Unbind previous transitionEnd events and re-bind new transitionEnd event
-            slider.container.off("webkitTransitionEnd transitionend");
-            slider.container.on("webkitTransitionEnd transitionend", function() {
+            slider.container.unbind("webkitTransitionEnd transitionend");
+            slider.container.bind("webkitTransitionEnd transitionend", function() {
               clearTimeout(slider.ensureAnimationEnd);
               slider.wrapup(dimension);
             });
@@ -926,7 +941,11 @@
           }());
 
       if (slider.transitions) {
-        target = (vertical) ? "translate3d(0," + target + ",0)" : "translate3d(" + (parseInt(target)+'px') + ",0,0)";
+        if (slider.isFirefox) {
+          target = (vertical) ? "translate3d(0," + target + ",0)" : "translate3d(" + (parseInt(target)+'px') + ",0,0)";
+        } else {
+          target = (vertical) ? "translate3d(0," + target + ",0)" : "translate3d(" + ((slider.vars.rtl?-1:1)*parseInt(target)+'px') + ",0,0)";
+        }
         dur = (dur !== undefined) ? (dur/1000) + "s" : "0s";
         slider.container.css("-" + slider.pfx + "-transition-duration", dur);
          slider.container.css("transition-duration", dur);
@@ -982,7 +1001,12 @@
           setTimeout(function(){
             slider.doMath();
           if(slider.vars.rtl){
+            if (slider.isFirefox) {
               slider.newSlides.css({"width": slider.computedW, "marginRight" : slider.computedM, "float": "right", "display": "block"});
+            } else {
+              slider.newSlides.css({"width": slider.computedW, "marginRight" : slider.computedM, "float": "left", "display": "block"});
+            }
+              
            }
             else{
               slider.newSlides.css({"width": slider.computedW, "marginRight" : slider.computedM, "float": "left", "display": "block"});
@@ -1058,7 +1082,7 @@
       slider.computedM = slider.itemM;
     };
 
-    slider.update = function(pos, action, $obj) {
+    slider.update = function(pos, action, $obj = null) {
       slider.doMath();
 
       // update currentSlide and slider.animatingTo if necessary
@@ -1074,13 +1098,15 @@
       // update controlNav
       if (slider.vars.controlNav && !slider.manualControls) {
         if ((action === "add" && !carousel) || slider.pagingCount > slider.controlNav.length) {
-          methods.controlNav.update("add", $obj, pos);
+          console.log($obj)
+           methods.controlNav.update("add", pos, $obj);
         } else if ((action === "remove" && !carousel) || slider.pagingCount < slider.controlNav.length) {
           if (carousel && slider.currentSlide > slider.last) {
             slider.currentSlide -= 1;
             slider.animatingTo -= 1;
           }
-          methods.controlNav.update("remove", slider.last);
+          console.log($obj)
+          methods.controlNav.update("remove", pos, $obj);
         }
       }
       // update directionNav
@@ -1089,23 +1115,29 @@
     };
 
     slider.addSlide = function(obj, pos) {
-
-      console.log(pos)
-
       var $obj = $(obj);
-
+ 
       slider.count += 1;
       slider.last = slider.count - 1;
 
       // append new slide
       if (vertical && reverse) {
-        (pos !== undefined) ? slider.slides.eq(slider.count - pos).after($obj) : slider.container.prepend($obj);
+        if (pos !== undefined && pos !== 0) {
+          slider.slides.eq(slider.count - pos).after($obj)
+        } else {
+          slider.container.prepend($obj);
+        }
       } else {
-        (pos !== undefined) ? slider.slides.eq(pos).before($obj) : slider.container.append($obj);
+        if (pos !== undefined && pos !== 0) {
+          slider.slides.eq(pos).before($obj)
+        } else {
+          slider.container.append($obj);
+        }
       }
 
+
       // update currentSlide, animatingTo, controlNav, and directionNav
-      slider.update(pos, "add", $obj);
+       slider.update(pos, "add", $obj);
 
       // update slider.slides
       slider.slides = $(slider.vars.selector + ':not(.clone)', slider);
@@ -1147,9 +1179,9 @@
   };
 
   // Ensure the slider isn't focussed if the window loses focus.
-  $( window ).on( 'blur', function ( e ) {
+  $( window ).blur( function ( e ) {
     focused = false;
-  }).on( 'focus', function ( e ) {
+  }).focus( function ( e ) {
     focused = true;
   });
 
